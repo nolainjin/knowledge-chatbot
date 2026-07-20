@@ -127,3 +127,29 @@ def test_real_model_reply_uses_deterministic_slot_state(monkeypatch):
     slots = chat._sessions[session_id].slots
     assert slots["chief_complaint"] == "우울한 기분이 계속돼요."
     assert slots["symptom_context"] == "긴장이 계속되는것부터가 시작인데, 회사에 가기 싫어요.."
+
+
+# 대화맥락 검색(2026-07-20): 맥락 없는 팔로업이 앞 주제를 이어받는다.
+WIKI_DIR = str(REPO_ROOT / "knowledge-wiki")
+WIKI_FAKE = Settings(
+    anthropic_api_key="", knowledge_dir=WIKI_DIR, model="fake",
+    trust_proxy_hops=0, daily_request_cap=500,
+)
+
+
+def test_contextless_followup_inherits_prior_topic():
+    sid = "ctx-followup"
+    chat._sessions.pop(sid, None)
+    first = chat.handle_message(sid, "위키 질문은 어떻게 시작하나요?", WIKI_FAKE)
+    assert first["reply"] != chat._NO_GROUNDING_REPLY
+    # "그거 더 자세히 알려줘"는 단독 검색 0건이라 예전엔 거부됐다.
+    followup = chat.handle_message(sid, "그거 더 자세히 알려줘", WIKI_FAKE)
+    assert followup["reply"] != chat._NO_GROUNDING_REPLY
+
+
+def test_contextless_message_without_prior_history_still_refused():
+    sid = "ctx-none"
+    chat._sessions.pop(sid, None)
+    # 첫 메시지라 이어받을 맥락이 없다 → 관련성 바닥에 걸려 거부.
+    r = chat.handle_message(sid, "그거 더 자세히 알려줘", WIKI_FAKE)
+    assert r["reply"] == chat._NO_GROUNDING_REPLY

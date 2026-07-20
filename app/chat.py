@@ -366,6 +366,22 @@ def _handle_addiction_route(
     }
 
 
+def _retrieve(message: str, documents: list, session: ChatSession) -> list:
+    """현재 메시지로 검색하되, 0건이고 이전 대화가 있으면 최근 사용자 발화를
+    이어붙여 재검색한다 — 맥락 없는 팔로업("그게 확실해?", "더 자세히")이 앞
+    주제를 이어받도록. 증강 질의도 knowledge.search의 관련성 바닥을 그대로
+    거치므로, 정말 무관한 후속은 여전히 0건으로 남아 거부된다. 자기완결적
+    질의(단독으로 이미 문서를 찾는)는 증강하지 않아 정밀도가 유지된다.
+    """
+    hits = knowledge.search(message, documents)
+    if hits:
+        return hits
+    prior_user = [t["content"] for t in session.history if t.get("role") == "user"][-2:]
+    if not prior_user:
+        return hits
+    return knowledge.search(" ".join([*prior_user, message]), documents)
+
+
 def handle_message(
     session_id: str,
     message: str,
@@ -383,7 +399,7 @@ def handle_message(
 
     # ponytail: 매 요청마다 지식 디렉토리를 다시 읽는다. 소규모 위키 전제라
     # 캐시 없이도 충분하다 — 문서 수가 늘어 느려지면 그때 캐시를 붙인다.
-    docs = knowledge.search(message, knowledge.load_documents(settings.knowledge_dir))
+    docs = _retrieve(message, knowledge.load_documents(settings.knowledge_dir), session)
     persona = _load_persona(settings.knowledge_dir)
     progress = f"[진행: {session.turns + 1}/{MAX_TURNS}턴]"
     doc_section = _build_doc_section(docs)
@@ -527,12 +543,12 @@ def handle_message(
         cited_paths = {unicodedata.normalize("NFC", p) for p in _cited_doc_paths(reply)}
         if cited_paths - injected_paths:
             reply = _NO_GROUNDING_REPLY
-        elif docs and settings.model != "fake" and not (cited_paths & injected_paths):
-            # F2(MED-1) -- 문서가 주입됐는데 유효 인용이 0개면(근거 줄 없음/무관
-            # 답) 무검증 통과를 막는다. fake 데모는 .md 인용 형식을 안 쓰므로
-            # 제외한다. 내용 날조(경로는 실재하되 본문이 지어낸 경우)는 코드로
-            # 완전차단 불가 -- 이 게이트는 '근거 없음'만 닫는다.
-            reply = _NO_GROUNDING_REPLY
+        # 인용이 0개라고 거부하지는 않는다. 관련성 바닥(knowledge.search)이 무관
+        # 질의를 이미 검색 0건으로 막으므로, 문서가 주입된 채 인용 없이 오는 답은
+        # 대개 "이 자료엔 그 하위주제가 없지만 관련해선 …"라는 정직한 근거 응답이다
+        # (실측 2026-07-20: 인용 없는 답을 일괄 거부하면 유용한 답이 통째로
+        # "관련 내용 없음"으로 대체돼 실사용을 망쳤다). 날조 방어는 위의 '집합 밖
+        # 인용' 검사와 검색 바닥이 담당한다.
 
     storage.append_turn(session_id, "user", message, participant_id=effective_participant_id)
     storage.append_turn(session_id, "assistant", reply, participant_id=effective_participant_id)

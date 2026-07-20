@@ -1,8 +1,10 @@
-"""F2 (MED-1): 인용 게이트가 provenance 아닌 membership만 검사하던 구멍.
+"""인용 게이트 — 날조(집합 밖 경로)만 거부하고, '인용 없음'은 거부하지 않는다.
 
-코칭모드에서 (A) `근거:` 줄이 아예 없는 답이 무검증 통과하던 것을 닫는다:
-문서가 주입됐는데 실모드 답에 유효 인용이 0개면 고정거부. fake 모드와
-정상 인용(F1 통과) 답은 통과해야 한다.
+2026-07-20 실측 회귀: 문서가 주입됐는데 인용이 없다고 일괄 거부(구 F2)했더니,
+"이 자료엔 그 하위주제가 없지만 관련해선 …"라는 **정직하고 유용한 근거 응답**이
+통째로 "관련 내용을 찾지 못했습니다"로 대체됐다. 무관 질의는 관련성 바닥
+(knowledge.search 0건)이 이미 막으므로, 인용 유무로 거부하지 않는다. 날조 방어는
+'집합 밖 인용 경로' 검사(test_citation.py)와 검색 바닥이 담당한다.
 """
 
 from pathlib import Path
@@ -32,16 +34,17 @@ def _settings(model: str) -> Settings:
     )
 
 
-def test_real_reply_without_any_citation_is_refused(monkeypatch):
-    """코칭모드 + 문서 주입됐는데 유효 인용 0개(근거 줄 없음) → 고정거부."""
-    monkeypatch.setattr(
-        chat.llm, "ask", lambda **_kwargs: "메타인지는 자기 사고를 점검하는 능력입니다."
-    )
+def test_real_reply_without_citation_is_not_refused(monkeypatch):
+    """회귀 방지: 문서가 주입된 정직한 무인용 답은 거부되지 않고 그대로 전달된다.
+    (질의는 관련성 바닥을 통과해 문서를 얻었으므로 무관 질의가 아니다.)"""
+    honest = "메타인지의 신경 기질은 이 자료에 없지만, 자료는 메타인지의 개념과 학습 역할을 다룹니다."
+    monkeypatch.setattr(chat.llm, "ask", lambda **_kwargs: honest)
     chat._sessions.pop("cite-missing", None)
 
     result = chat.handle_message("cite-missing", _QUERY, _settings("claude-cli"))
 
-    assert result["reply"] == chat._NO_GROUNDING_REPLY
+    assert result["reply"] == honest
+    assert result["reply"] != chat._NO_GROUNDING_REPLY
 
 
 def test_real_reply_with_valid_citation_passes(monkeypatch):
