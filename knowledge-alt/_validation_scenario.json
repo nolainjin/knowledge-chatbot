@@ -1,0 +1,11 @@
+{
+  "session_id": "knowledge-alt-validator",
+  "model": "fake",
+  "messages": [
+    "드립 커피를 처음 배워보고 싶어요.",
+    "집에는 드리퍼와 그라인더가 준비되어 있어요.",
+    "쓴맛보다 산미와 균형이 있는 맛이 좋아요.",
+    "교육용 데모 연습이고 개인정보 없음으로 진행할게요."
+  ],
+  "expect_unfilled_empty": true
+}

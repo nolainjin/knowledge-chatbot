@@ -1,0 +1,8 @@
+fastapi==0.139.0
+uvicorn==0.51.0
+anthropic==0.116.0
+PyYAML==6.0.3
+pytest==9.1.1
+httpx==0.28.1
+pdfplumber==0.11.10
+mammoth==1.12.0

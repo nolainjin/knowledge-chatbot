@@ -1,0 +1,11 @@
+.env
+.venv/
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.phase/
+.omc/
+.DS_Store
+scripts/gui-smoke/node_modules/
+scripts/gui-smoke/screenshots/

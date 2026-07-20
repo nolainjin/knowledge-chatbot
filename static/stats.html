@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>내담자 통계 대시보드</title>
+  <link rel="stylesheet" href="style.css?v=13" />
+</head>
+<body class="stats-body">
+  <main class="stats-shell">
+    <header class="stats-hero">
+      <div>
+        <p class="eyebrow">SQLite 적재 현황</p>
+        <h1>내담자 통계 대시보드</h1>
+        <p>100명 데모 데이터와 실제 접수 로그가 같은 구조로 적재되는지 확인합니다.</p>
+      </div>
+      <a class="header-link stats-back" href="index.html">챗봇으로 돌아가기</a>
+    </header>
+
+    <nav class="dashboard-tabs" aria-label="대시보드 보기">
+      <button type="button" class="tab-button active" data-tab="overview">전체 현황</button>
+      <button type="button" class="tab-button" data-tab="management">관리 대상</button>
+      <button type="button" class="tab-button" data-tab="crisis">위기 우선</button>
+    </nav>
+
+    <section class="tab-panel" id="overview-panel" data-panel="overview">
+    <section class="metric-grid" id="metric-grid" aria-label="핵심 지표"></section>
+
+    <section class="stats-grid">
+      <article class="stats-card">
+        <h2>상담 트랙 분포</h2>
+        <div id="track-bars" class="bar-list"></div>
+      </article>
+      <article class="stats-card">
+        <h2>슬롯 채움률</h2>
+        <div id="slot-bars" class="bar-list"></div>
+      </article>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stats-card">
+        <h2>일자별 적재</h2>
+        <div id="daily-bars" class="bar-list compact"></div>
+      </article>
+      <article class="stats-card">
+        <h2>최근 세션</h2>
+        <div class="table-wrap">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>세션</th>
+                <th>개인번호</th>
+                <th>트랙</th>
+                <th>위기</th>
+              </tr>
+            </thead>
+            <tbody id="recent-sessions"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+    </section>
+
+    <section class="tab-panel" id="triage-panel" data-panel="triage" hidden>
+      <article class="stats-card individual-card">
+        <div class="section-heading">
+          <div>
+            <h2 id="triage-title">개별 특이 사항</h2>
+            <p id="triage-description">위기·미확인·지지체계 취약처럼 사람 검토가 필요한 세션만 모았습니다.</p>
+          </div>
+          <span id="individual-count" class="pill">0건</span>
+        </div>
+        <div class="dashboard-tools">
+          <label class="search-control">
+            <span class="sr-only">개인번호·세션·호소 검색</span>
+            <input id="triage-search" type="search" placeholder="개인번호·세션·호소 검색" />
+          </label>
+          <label class="sort-control">
+            <span>정렬</span>
+            <select id="triage-sort">
+              <option value="priority">우선순위</option>
+              <option value="participant">개인번호</option>
+              <option value="track">상담 트랙</option>
+            </select>
+          </label>
+          <button type="button" class="tool-button" id="toggle-details">전체 펼치기</button>
+          <button type="button" class="tool-button" id="export-csv">CSV 내보내기</button>
+        </div>
+        <div class="filter-row" role="toolbar" aria-label="개별 특이 사항 필터">
+          <button type="button" class="filter-chip active" data-filter="all">전체</button>
+          <button type="button" class="filter-chip" data-filter="crisis">위기</button>
+          <button type="button" class="filter-chip" data-filter="addiction">중독 연결</button>
+          <button type="button" class="filter-chip" data-filter="high">긴급</button>
+          <button type="button" class="filter-chip" data-filter="medium">주의</button>
+          <button type="button" class="filter-chip" data-filter="support">지지체계</button>
+          <button type="button" class="filter-chip" data-filter="missing">미확인</button>
+          <button type="button" class="filter-chip" data-filter="early">조기이탈</button>
+        </div>
+        <div id="individual-flags" class="individual-list"></div>
+      </article>
+    </section>
+
+    <p id="stats-status" class="status" role="alert"></p>
+  </main>
+  <script src="stats.js?v=5"></script>
+</body>
+</html>
